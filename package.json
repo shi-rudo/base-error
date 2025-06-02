@@ -1,13 +1,36 @@
 {
   "name": "@shirudo/base-error",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple error base class for TypeScript",
-  "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/shi-rudo/base-error.git"
+  },
+  "keywords": [
+    "typescript",
+    "error",
+    "base-error",
+    "try-catch",
+    "exception",
+    "cross-platform"
+  ],
+  "author": "shirudo",
+  "license": "MIT",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bugs": {
+    "url": "https://github.com/shi-rudo/base-error/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
@@ -16,20 +39,22 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
-    "build": "tsc"
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^6.18.1",
     "@typescript-eslint/parser": "^6.18.1",
+    "@vitest/coverage-v8": "^1.3.1",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "prettier": "^3.2.5",
+    "tsup": "^8.5.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
-    "vitest": "^1.3.1",
-    "@vitest/coverage-v8": "^1.3.1"
+    "vitest": "^1.3.1"
   },
   "peerDependencies": {
     "typescript": "^5.3.3"
