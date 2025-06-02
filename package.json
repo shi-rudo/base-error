@@ -1,10 +1,10 @@
 {
   "name": "@shirudo/base-error",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A simple error base class for TypeScript",
   "repository": {
     "type": "git",
-    "url": "git://github.com/shi-rudo/base-error.git"
+    "url": "git://github.com/shi-rudo/base-error-ts.git"
   },
   "keywords": [
     "typescript",
@@ -20,7 +20,7 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "bugs": {
-    "url": "https://github.com/shi-rudo/base-error/issues"
+    "url": "https://github.com/shi-rudo/base-error-ts/issues"
   },
   "publishConfig": {
     "access": "public"
