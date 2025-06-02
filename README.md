@@ -88,6 +88,50 @@ const error = new ApiError(404, "Resource not found");
 console.log(JSON.stringify(error, null, 2));
 ```
 
+### Type Narrowing with instanceof
+
+```typescript
+import { BaseError } from "@shirudo/base-error";
+
+class NotFoundError extends BaseError<"NotFoundError"> {
+  constructor(resourceId: string) {
+    super("NotFoundError", `Resource ${resourceId} not found`);
+  }
+}
+
+class ValidationError extends BaseError<"ValidationError"> {
+  constructor(field: string, message: string) {
+    super("ValidationError", `${field}: ${message}`);
+    this.field = field;
+  }
+
+  field: string;
+}
+
+function handleError(error: unknown) {
+  // Type narrowing with instanceof
+  if (error instanceof NotFoundError) {
+    // TypeScript knows this is a NotFoundError
+    // error.name has IntelliSense and is typed as "NotFoundError"
+    console.log(`Got a ${error.name} with message: ${error.message}`);
+    // Handle 404 case
+  } else if (error instanceof ValidationError) {
+    // TypeScript knows this is a ValidationError
+    // error.name is typed as "ValidationError" and field is available
+    console.log(`Validation failed for field: ${error.field}`);
+    console.log(`Error type: ${error.name}, message: ${error.message}`);
+    // Handle validation error
+  } else if (error instanceof BaseError) {
+    // TypeScript knows this is some kind of BaseError
+    // error.name is typed based on the generic parameter
+    console.log(`Unknown error type: ${error.name}`);
+    console.log(`Occurred at: ${error.timestampIso}`);
+  } else {
+    console.log("Unknown error:", error);
+  }
+}
+```
+
 ## API
 
 ### `BaseError<T extends string>`
