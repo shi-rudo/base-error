@@ -1,7 +1,7 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: ["src/index.ts", "!examples/**"],
   format: ["esm", "cjs"],
   dts: true,
   splitting: false,
@@ -10,4 +10,6 @@ export default defineConfig({
   minify: false,
   treeshake: true,
   outDir: "dist",
+  noExternal: [], // Bundle all dependencies
+  platform: "neutral", // Target both Node.js and browsers
 });
