@@ -4,9 +4,9 @@
  * This example demonstrates how to use BaseError in an API context,
  * including mapping errors to HTTP responses and creating a consistent
  * error handling system.
-import { BaseError } from '../src/index.js';
-
  */
+import { BaseError } from "../src/index.js";
+
 // Define a base API error class
 class ApiError extends BaseError<"ApiError"> {
   constructor(
