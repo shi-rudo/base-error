@@ -4,9 +4,9 @@
  * This example demonstrates how to use BaseError in an API context,
  * including mapping errors to HTTP responses and creating a consistent
  * error handling system.
- */
-import { BaseError } from "../src/index.js";
+import { BaseError } from '../src/index.js';
 
+ */
 // Define a base API error class
 class ApiError extends BaseError<"ApiError"> {
   constructor(
@@ -111,6 +111,11 @@ function getUser(id: string) {
     throw new UnauthorizedError("Authentication required to access this user");
   }
 
+  // Simulate forbidden access (user exists but access is forbidden)
+  if (id === "forbidden") {
+    throw new ForbiddenError("Access to this user is forbidden");
+  }
+
   return { id, name: "John Doe", email: "john@example.com" };
 }
 
@@ -193,9 +198,20 @@ function main() {
 
   console.log("\n---\n");
 
-  // Example 6: Handling unknown errors
+  // Example 6: Forbidden Error
   try {
-    console.log("Example 6: Handling an unknown error");
+    console.log("Example 6: Accessing a forbidden user");
+    const user = getUser("forbidden");
+    console.log("User:", user);
+  } catch (error) {
+    errorHandler(error);
+  }
+
+  console.log("\n---\n");
+
+  // Example 7: Handling unknown errors
+  try {
+    console.log("Example 7: Handling an unknown error");
     throw new Error("Something unexpected happened");
   } catch (error) {
     errorHandler(error);
