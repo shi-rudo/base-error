@@ -1,6 +1,6 @@
 /**
  * Basic Usage Example
- * 
+ *
  * This example demonstrates how to create and use custom error classes
  * that extend BaseError.
  */
@@ -8,7 +8,10 @@ import { BaseError } from "../src/index.js";
 
 // Define a custom error for validation failures
 class ValidationError extends BaseError<"ValidationError"> {
-  constructor(message: string, public readonly field?: string) {
+  constructor(
+    message: string,
+    public readonly field?: string,
+  ) {
     super("ValidationError", message);
   }
 }
@@ -16,7 +19,10 @@ class ValidationError extends BaseError<"ValidationError"> {
 // Define a custom error for not found resources
 class NotFoundError extends BaseError<"NotFoundError"> {
   constructor(resourceType: string, resourceId: string) {
-    super("NotFoundError", `${resourceType} with id ${resourceId} was not found`);
+    super(
+      "NotFoundError",
+      `${resourceType} with id ${resourceId} was not found`,
+    );
   }
 }
 
@@ -65,7 +71,7 @@ function validateUser(user: { name: string; email: string }) {
   if (!user.name) {
     throw new ValidationError("Name is required", "name");
   }
-  
+
   if (!user.email.includes("@")) {
     throw new ValidationError("Invalid email format", "email");
   }
@@ -76,6 +82,7 @@ function findUser(userId: string) {
   throw new NotFoundError("User", userId);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function saveUser(user: { name: string; email: string }) {
   try {
     // Simulate a low-level error

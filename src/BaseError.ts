@@ -22,6 +22,14 @@ declare global {
  *
  * @example
  * ```ts
+ * // Using automatic name inference (recommended)
+ * class UserNotFoundError extends BaseError<'UserNotFoundError'> {
+ *   constructor(userId: string) {
+ *     super(`User ${userId} not found`);
+ *   }
+ * }
+ *
+ * // Using explicit name (legacy)
  * class UserNotFoundError extends BaseError<'UserNotFoundError'> {
  *   constructor(userId: string) {
  *     super('UserNotFoundError', `User ${userId} not found`);
@@ -42,21 +50,61 @@ export class BaseError<T extends string> extends Error {
   public readonly stack?: string;
 
   /**
-   * @param name   – Error identifier (usually the subclass name)
+   * Creates a new BaseError instance.
+   *
+   * @overload
+   * @param message – Human-readable explanation (name will be inferred from constructor)
+   * @param cause   – Optional underlying error or extra context
+   */
+  public /*#__PURE__*/ constructor(message: string, cause?: unknown);
+  /**
+   * Creates a new BaseError instance.
+   *
+   * @overload
+   * @param name    – Error identifier (usually the subclass name)
    * @param message – Human-readable explanation
    * @param cause   – Optional underlying error or extra context
    */
+  public /*#__PURE__*/ constructor(name: T, message: string, cause?: unknown);
+  /**
+   * Implementation of the overloaded constructor.
+   */
   // The /*#__PURE__*/ pragma lets tree-shakers know the constructor is side-effect free
-  public /*#__PURE__*/ constructor(name: T, message: string, cause?: unknown) {
+  public /*#__PURE__*/ constructor(
+    nameOrMessage: T | string,
+    messageOrCause?: string | unknown,
+    cause?: unknown,
+  ) {
+    // Determine if we're using the new single-parameter form or the legacy form
+    const isNewForm = typeof messageOrCause !== "string";
+
+    let actualMessage: string;
+    let actualCause: unknown;
+
+    if (isNewForm) {
+      // New form: constructor(message, cause?)
+      actualMessage = nameOrMessage as string;
+      actualCause = messageOrCause;
+    } else {
+      // Legacy form: constructor(name, message, cause?)
+      actualMessage = messageOrCause as string;
+      actualCause = cause;
+    }
+
     // Call super with just the message parameter to ensure compatibility with all environments
-    super(message);
+    super(actualMessage);
+
+    // Set the name after super() call
+    const actualName: T = isNewForm
+      ? (this.constructor.name as T)
+      : (nameOrMessage as T);
 
     // Handle cause separately to support environments that don't have native cause support
-    if (cause !== undefined) {
+    if (actualCause !== undefined) {
       try {
         // Try to set cause using modern error options if supported
         Object.defineProperty(this, "cause", {
-          value: cause,
+          value: actualCause,
           configurable: true,
           writable: true,
         });
@@ -64,24 +112,24 @@ export class BaseError<T extends string> extends Error {
       } catch (_) {
         // Fallback for environments where defineProperty fails
         // Need to use any here as cause is not in the standard Error type
-        (this as unknown as Record<string, unknown>).cause = cause;
+        (this as unknown as Record<string, unknown>).cause = actualCause;
       }
     }
 
     // Preserve prototype chain for `instanceof` checks after transpilation.
     Object.setPrototypeOf(this, new.target.prototype);
 
-    this.name = name;
+    this.name = actualName;
 
     // Cross-runtime best-effort stack collection
     this.stack = this.#captureStack();
 
     // Guarantee a `cause` field on older runtimes so callers can rely on it.
     if (
-      cause !== undefined &&
+      actualCause !== undefined &&
       !(this as unknown as Record<string, unknown>).cause
     ) {
-      (this as unknown as Record<string, unknown>).cause = cause;
+      (this as unknown as Record<string, unknown>).cause = actualCause;
     }
   }
 

@@ -1,5 +1,5 @@
-import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -28,6 +28,7 @@ export default [
     rules: {
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/quotes": "off",
     },
   },
   {

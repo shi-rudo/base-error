@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { BaseError } from "../BaseError.js";
 
 // Ensure consistent behavior in tests
@@ -10,7 +11,7 @@ beforeEach(() => {
   vi.spyOn(Error, "captureStackTrace");
 });
 
-// Test error class that extends BaseError
+// Test error class that extends BaseError (legacy explicit name approach)
 class TestError extends BaseError<"TestError"> {
   constructor(message: string, cause?: unknown) {
     super("TestError", message, cause);
@@ -28,6 +29,20 @@ class TestError extends BaseError<"TestError"> {
         return causeValue instanceof Error ? causeValue.toString() : causeValue;
       })(),
     };
+  }
+}
+
+// Test error class using automatic name inference
+class AutoNamedError extends BaseError<"AutoNamedError"> {
+  constructor(message: string, cause?: unknown) {
+    super(message, cause); // Automatic name inference
+  }
+}
+
+// Another test error class for automatic name inference
+class ValidationError extends BaseError<"ValidationError"> {
+  constructor(field: string, message: string) {
+    super(`${field}: ${message}`); // Automatic name inference without cause
   }
 }
 
@@ -112,5 +127,80 @@ describe("BaseError", () => {
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(BaseError);
     expect(error).toBeInstanceOf(TestError);
+  });
+
+  describe("Automatic Name Inference (v2.0+)", () => {
+    it("should automatically infer error name from class name", () => {
+      const error = new AutoNamedError("Something went wrong");
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(BaseError);
+      expect(error).toBeInstanceOf(AutoNamedError);
+      expect(error.name).toBe("AutoNamedError");
+      expect(error.message).toBe("Something went wrong");
+    });
+
+    it("should automatically infer error name with cause", () => {
+      const cause = new Error("Root cause");
+      const error = new AutoNamedError("Wrapper error", cause);
+
+      expect(error.name).toBe("AutoNamedError");
+      expect(error.message).toBe("Wrapper error");
+      expect((error as unknown as Record<string, unknown>).cause).toBe(cause);
+      expect(error.toString()).toContain("Caused by: Error: Root cause");
+    });
+
+    it("should work with different error class names", () => {
+      const error = new ValidationError("email", "must be a valid email");
+
+      expect(error.name).toBe("ValidationError");
+      expect(error.message).toBe("email: must be a valid email");
+      expect(error).toBeInstanceOf(ValidationError);
+    });
+
+    it("should include timestamps with automatic name inference", () => {
+      const error = new AutoNamedError("Test");
+
+      expect(error.timestamp).toBe(mockDate.getTime());
+      expect(error.timestampIso).toBe(mockDate.toISOString());
+    });
+
+    it("should include stack trace with automatic name inference", () => {
+      const error = new AutoNamedError("Test");
+
+      expect(error.stack).toBeDefined();
+      expect(typeof error.stack).toBe("string");
+      // Just verify that a stack trace exists (content varies by environment)
+      expect(error.stack!.length).toBeGreaterThan(0);
+    });
+
+    it("should serialize to JSON correctly with automatic name", () => {
+      const cause = new Error("Root cause");
+      const error = new AutoNamedError("Test error", cause);
+
+      const json = error.toJSON();
+
+      expect(json).toMatchObject({
+        name: "AutoNamedError",
+        message: "Test error",
+        timestamp: mockDate.getTime(),
+        timestampIso: mockDate.toISOString(),
+        cause: "Error: Root cause", // BaseError.toJSON() converts Error causes to strings
+      });
+
+      if ("stack" in json) {
+        expect(typeof json.stack).toBe("string");
+      }
+    });
+
+    it("should handle undefined cause with automatic name inference", () => {
+      const error = new AutoNamedError("Test");
+
+      expect(
+        (error as unknown as Record<string, unknown>).cause,
+      ).toBeUndefined();
+      expect(error.toString()).not.toContain("Caused by");
+      expect(error.toString()).toBe("[AutoNamedError] Test");
+    });
   });
 });

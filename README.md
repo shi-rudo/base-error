@@ -10,6 +10,7 @@ A robust, cross-environment base error class for TypeScript applications that wo
 - ⏱️ **Built-in timestamps**: Includes both numeric (epoch) and ISO string timestamps
 - 🧬 **Proper inheritance**: Maintains prototype chain for reliable `instanceof` checks
 - 📊 **JSON serialization**: Built-in `toJSON` method for easy logging
+- ✨ **Automatic name inference**: No need to specify the error name twice (v2.0+)
 
 ## Installation
 
@@ -24,10 +25,17 @@ npm install @shirudo/base-error
 ```typescript
 import { BaseError } from "@shirudo/base-error";
 
-// Create a custom error class
+// Create a custom error class using automatic name inference (recommended)
 class UserNotFoundError extends BaseError<"UserNotFoundError"> {
   constructor(userId: string) {
-    super("UserNotFoundError", `User ${userId} not found`);
+    super(`User ${userId} not found`);
+  }
+}
+
+// Legacy approach with explicit name (still supported)
+class UserNotFoundErrorLegacy extends BaseError<"UserNotFoundErrorLegacy"> {
+  constructor(userId: string) {
+    super("UserNotFoundErrorLegacy", `User ${userId} not found`);
   }
 }
 
@@ -61,6 +69,34 @@ try {
 }
 ```
 
+### Automatic Name Inference (v2.0+)
+
+Starting from version 2.0, you can omit the error name parameter and BaseError will automatically use the class name:
+
+```typescript
+import { BaseError } from "@shirudo/base-error";
+
+// New simplified syntax (recommended)
+class UserNotFoundError extends BaseError<"UserNotFoundError"> {
+  constructor(userId: string) {
+    super(`User ${userId} not found`); // Name is automatically inferred
+  }
+}
+
+class ValidationError extends BaseError<"ValidationError"> {
+  constructor(field: string, message: string, cause?: unknown) {
+    super(`Validation failed for ${field}: ${message}`, cause);
+  }
+}
+
+// Legacy syntax still works for backward compatibility
+class LegacyError extends BaseError<"LegacyError"> {
+  constructor(message: string) {
+    super("LegacyError", message); // Explicit name
+  }
+}
+```
+
 ### JSON Serialization
 
 ```typescript
@@ -68,7 +104,7 @@ import { BaseError } from "@shirudo/base-error";
 
 class ApiError extends BaseError<"ApiError"> {
   constructor(statusCode: number, message: string, cause?: unknown) {
-    super("ApiError", message, cause);
+    super(message, cause); // Using automatic name inference
     this.statusCode = statusCode;
   }
 
@@ -88,6 +124,81 @@ const error = new ApiError(404, "Resource not found");
 console.log(JSON.stringify(error, null, 2));
 ```
 
+### Error Codes with Union Types
+
+For applications that need consistent error codes, you can use union types with BaseError:
+
+```typescript
+import { BaseError } from "@shirudo/base-error";
+
+// Define your error codes as a union type
+type ErrorCode =
+  | "USER_NOT_FOUND"
+  | "USER_NOT_AUTHORIZED"
+  | "USER_NOT_AUTHENTICATED"
+  | "USER_QUOTA_LIMIT_REACHED";
+
+// Base class for all user-related errors
+class UserError<T extends ErrorCode> extends BaseError<T> {
+  constructor(
+    public readonly code: T,
+    message: string,
+    public readonly userId?: string,
+    cause?: unknown,
+  ) {
+    super(message, cause); // Using automatic name inference
+    this.code = code;
+  }
+
+  // Override toJSON to include the error code
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      code: this.code,
+      userId: this.userId,
+    };
+  }
+}
+
+// Specific error classes
+class UserNotFoundError extends UserError<"USER_NOT_FOUND"> {
+  constructor(userId: string) {
+    super("USER_NOT_FOUND", `User with ID ${userId} was not found`, userId);
+  }
+}
+
+class UserNotAuthorizedError extends UserError<"USER_NOT_AUTHORIZED"> {
+  constructor(userId: string, resource: string) {
+    super(
+      "USER_NOT_AUTHORIZED",
+      `User ${userId} is not authorized to access ${resource}`,
+      userId,
+    );
+  }
+}
+
+// Type-safe error handling
+function handleUserError(error: unknown): void {
+  if (error instanceof UserError) {
+    // TypeScript knows the error code is from the ErrorCode union
+    switch (error.code) {
+      case "USER_NOT_FOUND":
+        console.log("→ Redirecting to user registration page");
+        break;
+      case "USER_NOT_AUTHORIZED":
+        console.log("→ Redirecting to access denied page");
+        break;
+      case "USER_NOT_AUTHENTICATED":
+        console.log("→ Redirecting to login page");
+        break;
+      case "USER_QUOTA_LIMIT_REACHED":
+        console.log("→ Showing upgrade options");
+        break;
+    }
+  }
+}
+```
+
 ### Type Narrowing with instanceof
 
 ```typescript
@@ -95,13 +206,13 @@ import { BaseError } from "@shirudo/base-error";
 
 class NotFoundError extends BaseError<"NotFoundError"> {
   constructor(resourceId: string) {
-    super("NotFoundError", `Resource ${resourceId} not found`);
+    super(`Resource ${resourceId} not found`); // Using automatic name inference
   }
 }
 
 class ValidationError extends BaseError<"ValidationError"> {
   constructor(field: string, message: string) {
-    super("ValidationError", `${field}: ${message}`);
+    super(`${field}: ${message}`); // Using automatic name inference
     this.field = field;
   }
 
@@ -138,6 +249,9 @@ function handleError(error: unknown) {
 
 ```typescript
 class BaseError<T extends string> extends Error {
+  // Automatic name inference (recommended)
+  constructor(message: string, cause?: unknown);
+  // Explicit name (legacy)
   constructor(name: T, message: string, cause?: unknown);
 
   // Properties

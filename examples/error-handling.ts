@@ -1,6 +1,6 @@
 /**
  * Error Handling Example
- * 
+ *
  * This example demonstrates different error handling patterns
  * with BaseError and how to properly catch, process, and rethrow errors.
  */
@@ -14,7 +14,11 @@ class AppError extends BaseError<"AppError"> {
 }
 
 class NetworkError extends AppError {
-  constructor(message: string, public readonly statusCode?: number, cause?: unknown) {
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+    cause?: unknown,
+  ) {
     super(message, cause);
     // Override the name to match the class name
     Object.defineProperty(this, "name", { value: "NetworkError" });
@@ -23,7 +27,11 @@ class NetworkError extends AppError {
 
 class TimeoutError extends NetworkError {
   constructor(resource: string, timeoutMs: number, cause?: unknown) {
-    super(`Request to ${resource} timed out after ${timeoutMs}ms`, undefined, cause);
+    super(
+      `Request to ${resource} timed out after ${timeoutMs}ms`,
+      undefined,
+      cause,
+    );
     // Override the name to match the class name
     Object.defineProperty(this, "name", { value: "TimeoutError" });
   }
@@ -47,7 +55,7 @@ async function main() {
     await processUserData("user-123");
   } catch (error) {
     console.log("Pattern 2 - Type checking with instanceof:");
-    
+
     if (error instanceof NetworkError) {
       console.log(`Network error occurred with status: ${error.statusCode}`);
     } else if (error instanceof AppError) {
@@ -69,14 +77,13 @@ async function main() {
 
   // Pattern 4: Async error handling with Promise.catch
   console.log("Pattern 4 - Async error handling with Promise.catch:");
-  await fetchUserProfile("user-789")
-    .catch(error => {
-      if (error instanceof TimeoutError) {
-        console.log(`Request timed out: ${error.message}`);
-      } else {
-        console.log(`Error fetching profile: ${error.message}`);
-      }
-    });
+  await fetchUserProfile("user-789").catch((error) => {
+    if (error instanceof TimeoutError) {
+      console.log(`Request timed out: ${error.message}`);
+    } else {
+      console.log(`Error fetching profile: ${error.message}`);
+    }
+  });
 }
 
 // Example functions that throw errors
@@ -96,7 +103,10 @@ async function processPayment(orderId: string, amount: number): Promise<void> {
     throw new Error("Payment gateway unavailable");
   } catch (cause) {
     // Transform the error and rethrow
-    throw new AppError(`Failed to process payment for order ${orderId} (${amount})`, cause);
+    throw new AppError(
+      `Failed to process payment for order ${orderId} (${amount})`,
+      cause,
+    );
   }
 }
 
@@ -106,6 +116,6 @@ async function fetchUserProfile(userId: string): Promise<unknown> {
 }
 
 // Run the example
-main().catch(error => {
+main().catch((error) => {
   console.error("Unhandled error in main:", error);
 });
