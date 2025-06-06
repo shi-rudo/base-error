@@ -250,8 +250,7 @@ function handleError(error: unknown) {
 The package includes a `guard` utility function for runtime assertions with TypeScript type narrowing:
 
 ```typescript
-import { BaseError } from "@shirudo/base-error";
-import guard from "@shirudo/base-error/utils/guard";
+import { BaseError, guard } from "@shirudo/base-error";
 
 class UserNotFoundError extends BaseError<"UserNotFoundError"> {
   constructor(userId: string) {
