@@ -243,6 +243,61 @@ function handleError(error: unknown) {
 }
 ```
 
+## Utilities
+
+### `guard` function
+
+The package includes a `guard` utility function for runtime assertions with TypeScript type narrowing:
+
+```typescript
+import { BaseError } from "@shirudo/base-error";
+import guard from "@shirudo/base-error/utils/guard";
+
+class UserNotFoundError extends BaseError<"UserNotFoundError"> {
+  constructor(userId: string) {
+    super(`User ${userId} not found`);
+  }
+}
+
+class ValidationError extends BaseError<"ValidationError"> {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+// Basic usage
+function processUser(user: User | null) {
+  // Assert that user exists, throw custom error if not
+  guard(user, new UserNotFoundError("current-user"));
+  
+  // TypeScript now knows user is not null
+  console.log(user.name); // No TypeScript error
+}
+
+// Validation example
+function validateEmail(email: string) {
+  const isValid = email.includes("@") && email.includes(".");
+  guard(isValid, new ValidationError("Invalid email format"));
+  
+  // Continue with valid email
+  return email.toLowerCase();
+}
+
+// Works with any truthy/falsy values
+function processArray(items: unknown[]) {
+  guard(items.length > 0, new ValidationError("Array cannot be empty"));
+  
+  // Process non-empty array
+  return items.map(item => String(item));
+}
+```
+
+The `guard` function:
+- Throws the provided `BaseError` instance when the condition is falsy
+- Provides TypeScript type narrowing through assertion signatures
+- Works with any truthy/falsy values, not just booleans
+- Maintains the full error context and stack trace
+
 ## API
 
 ### `BaseError<T extends string>`
