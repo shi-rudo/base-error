@@ -12,24 +12,21 @@ class ValidationError extends BaseError<"ValidationError"> {
     message: string,
     public readonly field?: string,
   ) {
-    super("ValidationError", message);
+    super(message);
   }
 }
 
 // Define a custom error for not found resources
 class NotFoundError extends BaseError<"NotFoundError"> {
   constructor(resourceType: string, resourceId: string) {
-    super(
-      "NotFoundError",
-      `${resourceType} with id ${resourceId} was not found`,
-    );
+    super(`${resourceType} with id ${resourceId} was not found`);
   }
 }
 
 // Define a custom error with cause
 class DatabaseError extends BaseError<"DatabaseError"> {
   constructor(message: string, cause?: unknown) {
-    super("DatabaseError", message, cause);
+    super(message, cause);
   }
 }
 
@@ -69,11 +66,27 @@ function main() {
 // Example functions that throw custom errors
 function validateUser(user: { name: string; email: string }) {
   if (!user.name) {
-    throw new ValidationError("Name is required", "name");
+    const error = new ValidationError("Name is required", "name");
+    // Add user-friendly messages with duplicate prevention
+    error
+      .withUserMessage("Please provide a name.")
+      .addLocalizedMessage("en", "Name is required.")
+      .addLocalizedMessage("es", "Se requiere un nombre.")
+      .addLocalizedMessage("fr", "Un nom est requis.");
+    throw error;
   }
 
   if (!user.email.includes("@")) {
-    throw new ValidationError("Invalid email format", "email");
+    const error = new ValidationError("Invalid email format", "email");
+    error
+      .withUserMessage("Please provide a valid email address.")
+      .addLocalizedMessage("en", "Please enter a valid email address.")
+      .addLocalizedMessage(
+        "es",
+        "Por favor ingrese una dirección de correo válida.",
+      )
+      .addLocalizedMessage("fr", "Veuillez saisir une adresse e-mail valide.");
+    throw error;
   }
 }
 

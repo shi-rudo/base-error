@@ -14,7 +14,7 @@ class ApiError extends BaseError<"ApiError"> {
     public readonly statusCode: number = 500,
     cause?: unknown,
   ) {
-    super("ApiError", message, cause);
+    super(message, cause);
   }
 
   // Convert to an API response
