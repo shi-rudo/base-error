@@ -1,6 +1,6 @@
 {
   "name": "@shirudo/base-error",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "A simple error base class for TypeScript",
   "repository": {
     "type": "git",
@@ -12,7 +12,16 @@
     "base-error",
     "try-catch",
     "exception",
-    "cross-platform"
+    "cross-platform",
+    "cause",
+    "stack-trace",
+    "user-friendly-messages",
+    "json",
+    "error-handling",
+    "error-management",
+    "error-propagation",
+    "error-recovery",
+    "error-logging"
   ],
   "author": "shirudo",
   "license": "MIT",
@@ -28,7 +37,8 @@
   "files": [
     "dist",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "MIGRATION-v2-to-v3.md"
   ],
   "type": "module",
   "exports": {
