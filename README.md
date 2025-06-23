@@ -5,7 +5,6 @@
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@shirudo/base-error)](https://bundlephobia.com/package/@shirudo/base-error)
 [![Tests](https://github.com/shi-rudo/base-error-ts/actions/workflows/tests.yml/badge.svg)](https://github.com/shi-rudo/base-error-ts/actions/workflows/tests.yml)
 
-
 A robust, cross-environment base error class for TypeScript applications that works seamlessly across Node.js, modern browsers, and edge runtimes (like Cloudflare Workers, Deno Deploy, and Vercel Edge Functions).
 
 ## Features
@@ -17,12 +16,15 @@ A robust, cross-environment base error class for TypeScript applications that wo
 - 🧬 **Proper inheritance**: Maintains prototype chain for reliable `instanceof` checks
 - 📊 **JSON serialization**: Built-in `toJSON` method for easy logging
 - ✨ **Automatic name inference**: No need to specify the error name twice (v2.0+)
+- 👤 **User-friendly messages**: Built-in support for user-friendly error messages and internationalization with preserved insertion order
 
 ## Installation
 
 ```bash
 npm install @shirudo/base-error
 ```
+
+> **📖 Upgrading from v2?** See the [Migration Guide](MIGRATION-v2-to-v3.md) for detailed upgrade instructions.
 
 ## Usage
 
@@ -31,17 +33,12 @@ npm install @shirudo/base-error
 ```typescript
 import { BaseError } from "@shirudo/base-error";
 
-// Create a custom error class using automatic name inference (recommended)
+// Create a custom error class using automatic name inference
 class UserNotFoundError extends BaseError<"UserNotFoundError"> {
   constructor(userId: string) {
     super(`User ${userId} not found`);
-  }
-}
-
-// Legacy approach with explicit name (still supported)
-class UserNotFoundErrorLegacy extends BaseError<"UserNotFoundErrorLegacy"> {
-  constructor(userId: string) {
-    super("UserNotFoundErrorLegacy", `User ${userId} not found`);
+    // Optional: Add user-friendly message for end users
+    this.withUserMessage("The requested user could not be found.");
   }
 }
 
@@ -56,13 +53,13 @@ import { BaseError } from "@shirudo/base-error";
 
 class DatabaseError extends BaseError<"DatabaseError"> {
   constructor(message: string, cause?: unknown) {
-    super("DatabaseError", message, cause);
+    super(message, cause);
   }
 }
 
 class UserServiceError extends BaseError<"UserServiceError"> {
   constructor(message: string, cause?: unknown) {
-    super("UserServiceError", message, cause);
+    super(message, cause);
   }
 }
 
@@ -75,14 +72,13 @@ try {
 }
 ```
 
-### Automatic Name Inference (v2.0+)
+### Automatic Name Inference
 
-Starting from version 2.0, you can omit the error name parameter and BaseError will automatically use the class name:
+BaseError automatically infers the error name from the class name, eliminating the need to specify it twice:
 
 ```typescript
 import { BaseError } from "@shirudo/base-error";
 
-// New simplified syntax (recommended)
 class UserNotFoundError extends BaseError<"UserNotFoundError"> {
   constructor(userId: string) {
     super(`User ${userId} not found`); // Name is automatically inferred
@@ -92,13 +88,6 @@ class UserNotFoundError extends BaseError<"UserNotFoundError"> {
 class ValidationError extends BaseError<"ValidationError"> {
   constructor(field: string, message: string, cause?: unknown) {
     super(`Validation failed for ${field}: ${message}`, cause);
-  }
-}
-
-// Legacy syntax still works for backward compatibility
-class LegacyError extends BaseError<"LegacyError"> {
-  constructor(message: string) {
-    super("LegacyError", message); // Explicit name
   }
 }
 ```
@@ -130,6 +119,139 @@ const error = new ApiError(404, "Resource not found");
 console.log(JSON.stringify(error, null, 2));
 ```
 
+### User-Friendly Messages (v2.1+)
+
+BaseError supports user-friendly messages that can be localized for different languages, making it perfect for applications that need to show end-user error messages:
+
+```typescript
+import { BaseError } from "@shirudo/base-error";
+
+class UserNotFoundError extends BaseError<"UserNotFoundError"> {
+  constructor(userId: string) {
+    super(`User with id ${userId} not found in database lookup`); // Technical message
+    
+    // Set user-friendly message
+    this.withUserMessage(`User ${userId} was not found.`);
+    
+    // Add localized messages
+    this.addLocalizedMessage("en", "User not found. Please check the user ID and try again.")
+        .addLocalizedMessage("es", "Usuario no encontrado. Verifique el ID de usuario e inténtelo de nuevo.")
+        .addLocalizedMessage("fr", "Utilisateur introuvable. Veuillez vérifier l'ID utilisateur et réessayer.")
+        .addLocalizedMessage("de", "Benutzer nicht gefunden. Bitte überprüfen Sie die Benutzer-ID und versuchen Sie es erneut.");
+  }
+}
+
+// Usage in error handling
+try {
+  throw new UserNotFoundError("user-123");
+} catch (error) {
+  if (error instanceof UserNotFoundError) {
+    // Get localized message based on user preference
+    const userMessage = error.getUserMessage({ 
+      preferredLang: "es", 
+      fallbackLang: "en" 
+    });
+    console.log("User message:", userMessage); // "Usuario no encontrado..."
+    
+    // Technical message for logging
+    console.log("Technical message:", error.message); // "User with id user-123 not found..."
+  }
+}
+```
+
+#### User Message API
+
+The user message functionality provides four methods:
+
+1. **`withUserMessage(message: string)`** - Sets the default user-friendly message
+2. **`addLocalizedMessage(lang: string, message: string)`** - Adds a localized message for a specific language (prevents duplicates)
+3. **`updateLocalizedMessage(lang: string, message: string)`** - Updates or sets a localized message (allows overwriting)
+4. **`getUserMessage(options?)`** - Retrieves the appropriate message based on language preferences
+
+```typescript
+import { BaseError } from "@shirudo/base-error";
+
+class ValidationError extends BaseError<"ValidationError"> {
+  constructor(field: string, technicalReason: string) {
+    super(`Validation failed for field '${field}': ${technicalReason}`);
+    
+    // Chain method calls for fluent API
+    this.withUserMessage("Please check your input and try again.")
+        .addLocalizedMessage("en", "Please check your input and try again.")
+        .addLocalizedMessage("es", "Por favor, revise su entrada e inténtelo de nuevo.")
+        .addLocalizedMessage("fr", "Veuillez vérifier votre saisie et réessayer.")
+        .addLocalizedMessage("de", "Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut.");
+  }
+}
+
+const error = new ValidationError("email", "invalid format");
+
+// Get message with different language preferences
+error.getUserMessage(); // Default message
+error.getUserMessage({ preferredLang: "es" }); // Spanish message
+error.getUserMessage({ preferredLang: "it", fallbackLang: "en" }); // English (fallback)
+error.getUserMessage({ preferredLang: "pt", fallbackLang: "it" }); // Default message (no match)
+
+// Duplicate prevention
+try {
+  error.addLocalizedMessage("en", "Another English message"); // Throws error
+} catch (e) {
+  console.log(e.message); // "Localized message for language 'en' already exists..."
+}
+
+// Use updateLocalizedMessage to intentionally overwrite
+error.updateLocalizedMessage("en", "Updated English message"); // Works fine
+```
+
+#### JSON Serialization with User Messages
+
+User messages are automatically included in JSON serialization:
+
+```typescript
+const error = new ValidationError("email", "invalid format");
+
+console.log(JSON.stringify(error, null, 2));
+// Output:
+// {
+//   "name": "ValidationError",
+//   "message": "Validation failed for field 'email': invalid format",
+//   "timestamp": 1704067200000,
+//   "timestampIso": "2025-01-01T00:00:00.000Z",
+//   "stack": "...",
+//   "userMessage": "Please check your input and try again.",
+//   "localizedMessages": {
+//     "en": "Please check your input and try again.",
+//     "es": "Por favor, revise su entrada e inténtelo de nuevo.",
+//     "fr": "Veuillez vérifier votre saisie et réessayer.",
+//     "de": "Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut."
+//   }
+// }
+```
+
+#### Language Fallback Strategy
+
+The `getUserMessage()` method uses a three-tier fallback strategy:
+
+1. **Preferred language** - If specified and available
+2. **Fallback language** - If preferred is not available but fallback is
+3. **Default message** - If neither preferred nor fallback languages are available
+4. **`undefined`** - If no user messages have been set
+
+```typescript
+const error = new ValidationError("email", "invalid format");
+
+// Only set some languages
+error.withUserMessage("Default message")
+     .addLocalizedMessage("en", "English message")
+     .addLocalizedMessage("fr", "French message");
+
+// Fallback examples
+error.getUserMessage({ preferredLang: "fr" }); // → "French message"
+error.getUserMessage({ preferredLang: "es", fallbackLang: "en" }); // → "English message" 
+error.getUserMessage({ preferredLang: "es", fallbackLang: "de" }); // → "Default message"
+error.getUserMessage({ preferredLang: "es" }); // → "Default message"
+```
+
 ### Error Codes with Union Types
 
 For applications that need consistent error codes, you can use union types with BaseError:
@@ -152,7 +274,7 @@ class UserError<T extends ErrorCode> extends BaseError<T> {
     public readonly userId?: string,
     cause?: unknown,
   ) {
-    super(message, cause); // Using automatic name inference
+    super(message, cause);
     this.code = code;
   }
 
@@ -274,7 +396,7 @@ class ValidationError extends BaseError<"ValidationError"> {
 function processUser(user: User | null) {
   // Assert that user exists, throw custom error if not
   guard(user, new UserNotFoundError("current-user"));
-  
+
   // TypeScript now knows user is not null
   console.log(user.name); // No TypeScript error
 }
@@ -283,7 +405,7 @@ function processUser(user: User | null) {
 function validateEmail(email: string) {
   const isValid = email.includes("@") && email.includes(".");
   guard(isValid, new ValidationError("Invalid email format"));
-  
+
   // Continue with valid email
   return email.toLowerCase();
 }
@@ -291,13 +413,14 @@ function validateEmail(email: string) {
 // Works with any truthy/falsy values
 function processArray(items: unknown[]) {
   guard(items.length > 0, new ValidationError("Array cannot be empty"));
-  
+
   // Process non-empty array
-  return items.map(item => String(item));
+  return items.map((item) => String(item));
 }
 ```
 
 The `guard` function:
+
 - Throws the provided `BaseError` instance when the condition is falsy
 - Provides TypeScript type narrowing through assertion signatures
 - Works with any truthy/falsy values, not just booleans
@@ -309,13 +432,11 @@ The `guard` function:
 
 ```typescript
 class BaseError<T extends string> extends Error {
-  // Automatic name inference (recommended)
+  // Constructor with automatic name inference
   constructor(message: string, cause?: unknown);
-  // Explicit name (legacy)
-  constructor(name: T, message: string, cause?: unknown);
 
   // Properties
-  readonly name: T; // Error type name
+  readonly name: T; // Error type name (automatically inferred)
   readonly timestamp: number; // Epoch-ms timestamp
   readonly timestampIso: string; // ISO-8601 timestamp
   readonly stack?: string; // Stack trace
@@ -323,6 +444,15 @@ class BaseError<T extends string> extends Error {
 
   // Methods
   toJSON(): Record<string, unknown>; // Serialize to JSON
+  
+  // User Message Methods (v2.1+)
+  withUserMessage(message: string): this; // Set default user-friendly message
+  addLocalizedMessage(lang: string, message: string): this; // Add localized message (prevents duplicates)
+  updateLocalizedMessage(lang: string, message: string): this; // Update/set localized message (allows overwriting)
+  getUserMessage(options?: { 
+    preferredLang?: string; 
+    fallbackLang?: string; 
+  }): string | undefined; // Get appropriate user message
 }
 ```
 

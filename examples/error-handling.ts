@@ -9,7 +9,7 @@ import { BaseError } from "../src/index.js";
 // Define a hierarchy of custom errors
 class AppError extends BaseError<"AppError"> {
   constructor(message: string, cause?: unknown) {
-    super("AppError", message, cause);
+    super(message, cause);
   }
 }
 

@@ -25,12 +25,7 @@ class DatabaseError extends BaseError<"DatabaseError"> {
   }
 }
 
-// Legacy explicit name approach (still supported)
-class LegacyError extends BaseError<"LegacyError"> {
-  constructor(message: string) {
-    super("LegacyError", message);
-  }
-}
+// Note: Legacy explicit name approach has been removed for API clarity
 
 // Example usage
 function main() {
@@ -69,15 +64,7 @@ function main() {
     console.log();
   }
 
-  // Test legacy explicit name approach
-  try {
-    throw new LegacyError("This uses the old explicit name approach");
-  } catch (error) {
-    console.log("LegacyError (explicit name):");
-    console.log(`Name: ${error.name}`);
-    console.log(`Message: ${error.message}`);
-    console.log();
-  }
+  // Note: Legacy explicit name test removed - only automatic name inference is supported
 
   console.log("All tests completed successfully!");
 }
