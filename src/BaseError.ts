@@ -1,19 +1,7 @@
 // src/BaseError.ts
 
-// Type augmentation for ErrorConstructor to include non‑standard V8 helpers
-// (present in Node.js and any V8‑based runtime such as most “edge” functions)
-declare global {
-  // Extend the existing ErrorConstructor interface
-  interface ErrorConstructor {
-    captureStackTrace?(
-      error: Error,
-      constructorOpt?: (...args: unknown[]) => unknown,
-    ): void;
-    // stackTraceLimit is already defined in lib.dom.d.ts as number | undefined
-    // We need to match that type exactly to avoid conflicts
-    stackTraceLimit: number | undefined;
-  }
-}
+// Import global type augmentations (type-only import)
+import type {} from "./types/global.js";
 
 /**
  * Application-specific base error that works across full Node.js, isolate "edge"
