@@ -18,12 +18,11 @@ class TestError extends BaseError<"TestError"> {
   }
 
   toJSON() {
+    // Call parent toJSON to include user messages, then add custom logic
+    const baseJson = super.toJSON();
     return {
-      name: this.name,
-      message: this.message,
-      timestamp: this.timestamp,
-      timestampIso: this.timestampIso,
-      stack: this.stack,
+      ...baseJson,
+      // Override cause formatting for test consistency
       cause: (() => {
         const causeValue = (this as unknown as Record<string, unknown>).cause;
         return causeValue instanceof Error ? causeValue.toString() : causeValue;
@@ -201,6 +200,199 @@ describe("BaseError", () => {
       ).toBeUndefined();
       expect(error.toString()).not.toContain("Caused by");
       expect(error.toString()).toBe("[AutoNamedError] Test");
+    });
+  });
+
+  describe("User Message Functionality", () => {
+    it("should set and retrieve default user message", () => {
+      const error = new TestError("Technical error message");
+
+      error.withUserMessage("Something went wrong. Please try again.");
+
+      expect(error.getUserMessage()).toBe(
+        "Something went wrong. Please try again.",
+      );
+    });
+
+    it("should return undefined when no user message is set", () => {
+      const error = new TestError("Technical error message");
+
+      expect(error.getUserMessage()).toBeUndefined();
+    });
+
+    it("should allow method chaining with withUserMessage", () => {
+      const error = new TestError("Technical error message");
+
+      const result = error.withUserMessage("User friendly message");
+
+      expect(result).toBe(error); // Should return the same instance for chaining
+      expect(error.getUserMessage()).toBe("User friendly message");
+    });
+
+    it("should add and retrieve localized messages", () => {
+      const error = new TestError("Technical error message");
+
+      error.addLocalizedMessage("en", "Something went wrong.");
+      error.addLocalizedMessage("es", "Algo salió mal.");
+      error.addLocalizedMessage("de", "Etwas ist schief gelaufen.");
+
+      expect(error.getUserMessage({ preferredLang: "en" })).toBe(
+        "Something went wrong.",
+      );
+      expect(error.getUserMessage({ preferredLang: "es" })).toBe(
+        "Algo salió mal.",
+      );
+      expect(error.getUserMessage({ preferredLang: "de" })).toBe(
+        "Etwas ist schief gelaufen.",
+      );
+    });
+
+    it("should allow method chaining with addLocalizedMessage", () => {
+      const error = new TestError("Technical error message");
+
+      const result = error
+        .addLocalizedMessage("en", "English message")
+        .addLocalizedMessage("es", "Spanish message");
+
+      expect(result).toBe(error); // Should return the same instance for chaining
+      expect(error.getUserMessage({ preferredLang: "en" })).toBe(
+        "English message",
+      );
+      expect(error.getUserMessage({ preferredLang: "es" })).toBe(
+        "Spanish message",
+      );
+    });
+
+    it("should fall back to fallback language when preferred language is not available", () => {
+      const error = new TestError("Technical error message");
+
+      error.addLocalizedMessage("en", "English message");
+      error.addLocalizedMessage("es", "Spanish message");
+
+      // Request French (not available), fallback to English
+      expect(
+        error.getUserMessage({
+          preferredLang: "fr",
+          fallbackLang: "en",
+        }),
+      ).toBe("English message");
+    });
+
+    it("should fall back to default user message when neither preferred nor fallback language is available", () => {
+      const error = new TestError("Technical error message");
+
+      error.withUserMessage("Default user message");
+      error.addLocalizedMessage("es", "Spanish message");
+
+      // Request French (not available), fallback to German (not available), use default
+      expect(
+        error.getUserMessage({
+          preferredLang: "fr",
+          fallbackLang: "de",
+        }),
+      ).toBe("Default user message");
+    });
+
+    it("should return undefined when no messages are available", () => {
+      const error = new TestError("Technical error message");
+
+      expect(
+        error.getUserMessage({
+          preferredLang: "fr",
+          fallbackLang: "de",
+        }),
+      ).toBeUndefined();
+    });
+
+    it("should work with automatic name inference", () => {
+      const error = new AutoNamedError("Technical error message");
+
+      error
+        .withUserMessage("User friendly message")
+        .addLocalizedMessage("es", "Mensaje en español");
+
+      expect(error.getUserMessage()).toBe("User friendly message");
+      expect(error.getUserMessage({ preferredLang: "es" })).toBe(
+        "Mensaje en español",
+      );
+    });
+
+    it("should include user messages in JSON serialization", () => {
+      const error = new TestError("Technical error message");
+
+      error
+        .withUserMessage("Default user message")
+        .addLocalizedMessage("en", "English message")
+        .addLocalizedMessage("es", "Spanish message");
+
+      const json = error.toJSON();
+
+      expect(json).toHaveProperty("userMessage", "Default user message");
+      expect(json).toHaveProperty("localizedMessages", {
+        en: "English message",
+        es: "Spanish message",
+      });
+    });
+
+    it("should not include user messages in JSON when none are set", () => {
+      const error = new TestError("Technical error message");
+
+      const json = error.toJSON();
+
+      expect(json).not.toHaveProperty("userMessage");
+      expect(json).not.toHaveProperty("localizedMessages");
+    });
+
+    it("should handle empty localized messages object in JSON", () => {
+      const error = new TestError("Technical error message");
+
+      error.withUserMessage("Default message only");
+
+      const json = error.toJSON();
+
+      expect(json).toHaveProperty("userMessage", "Default message only");
+      expect(json).not.toHaveProperty("localizedMessages"); // Empty object should not be included
+    });
+
+    it("should support complex language codes", () => {
+      const error = new TestError("Technical error message");
+
+      error
+        .addLocalizedMessage("en-US", "American English message")
+        .addLocalizedMessage("en-GB", "British English message")
+        .addLocalizedMessage("fr-CA", "Canadian French message");
+
+      expect(error.getUserMessage({ preferredLang: "en-US" })).toBe(
+        "American English message",
+      );
+      expect(error.getUserMessage({ preferredLang: "en-GB" })).toBe(
+        "British English message",
+      );
+      expect(error.getUserMessage({ preferredLang: "fr-CA" })).toBe(
+        "Canadian French message",
+      );
+    });
+
+    it("should preserve message priority order: preferred -> fallback -> default", () => {
+      const error = new TestError("Technical error message");
+
+      error
+        .withUserMessage("Default message")
+        .addLocalizedMessage("en", "English message")
+        .addLocalizedMessage("es", "Spanish message")
+        .addLocalizedMessage("fr", "French message");
+
+      // Test all combinations
+      expect(error.getUserMessage({ preferredLang: "fr" })).toBe(
+        "French message",
+      );
+      expect(
+        error.getUserMessage({ preferredLang: "de", fallbackLang: "en" }),
+      ).toBe("English message");
+      expect(
+        error.getUserMessage({ preferredLang: "de", fallbackLang: "it" }),
+      ).toBe("Default message");
+      expect(error.getUserMessage()).toBe("Default message");
     });
   });
 });

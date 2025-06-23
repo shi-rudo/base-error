@@ -1,3 +1,5 @@
+// src/BaseError.ts
+
 // Type augmentation for ErrorConstructor to include non‑standard V8 helpers
 // (present in Node.js and any V8‑based runtime such as most “edge” functions)
 declare global {
@@ -20,20 +22,16 @@ declare global {
  * gracefully where it is not, and produces the richest stack trace the host
  * can provide.
  *
+ * This class includes support for default and localized user-friendly messages.
+ *
  * @example
  * ```ts
  * // Using automatic name inference (recommended)
  * class UserNotFoundError extends BaseError<'UserNotFoundError'> {
- *   constructor(userId: string) {
- *     super(`User ${userId} not found`);
- *   }
+ * constructor(userId: string) {
+ * super(`User with id ${userId} not found in database lookup`); // Technical message
+ * this.withUserMessage(`User ${userId} was not found.`); // User-friendly message
  * }
- *
- * // Using explicit name (legacy)
- * class UserNotFoundError extends BaseError<'UserNotFoundError'> {
- *   constructor(userId: string) {
- *     super('UserNotFoundError', `User ${userId} not found`);
- *   }
  * }
  * ```
  */
@@ -48,6 +46,10 @@ export class BaseError<T extends string> extends Error {
 
   /** Rich, filtered stack where the host supports it. */
   public readonly stack?: string;
+
+  // --- New properties for user-friendly messages ---
+  private _defaultUserMessage?: string;
+  private _localizedMessages: Record<string, string> = {};
 
   /**
    * Creates a new BaseError instance.
@@ -133,19 +135,82 @@ export class BaseError<T extends string> extends Error {
     }
   }
 
+  // ————————————————————————————————————————————————————————————————
+  // Methods for User-Friendly Messages
+  // ————————————————————————————————————————————————————————————————
+
+  /**
+   * Sets the default user-friendly message.
+   * This is used as a fallback when a specific localization is not available.
+   * @param message The default user-friendly message (typically in English).
+   * @returns The error instance for chaining.
+   */
+  public withUserMessage(message: string): this {
+    this._defaultUserMessage = message;
+    return this;
+  }
+
+  /**
+   * Adds a user-friendly message for a specific language.
+   * Can be called multiple times for different languages.
+   * @param lang The language code (e.g., 'de', 'es', 'fr-CA').
+   * @param message The localized message.
+   * @returns The error instance for chaining.
+   */
+  public addLocalizedMessage(lang: string, message: string): this {
+    this._localizedMessages[lang] = message;
+    return this;
+  }
+
+  /**
+   * Retrieves the most appropriate user-friendly message based on language preference.
+   * The fallback order is: preferred language -> fallback language -> default message.
+   * @param options - Language preference options.
+   * @returns The user-friendly message, or `undefined` if none is set.
+   */
+  public getUserMessage(options?: {
+    preferredLang?: string;
+    fallbackLang?: string;
+  }): string | undefined {
+    const { preferredLang, fallbackLang } = options || {};
+
+    // 1. Try to get the message for the preferred language.
+    if (preferredLang && this._localizedMessages[preferredLang]) {
+      return this._localizedMessages[preferredLang];
+    }
+
+    // 2. If not found, try the fallback language (e.g., 'en').
+    if (fallbackLang && this._localizedMessages[fallbackLang]) {
+      return this._localizedMessages[fallbackLang];
+    }
+
+    // 3. If still not found, return the default user message.
+    return this._defaultUserMessage;
+  }
+
   /** Serialises the error for JSON logs */
   public toJSON(): Record<string, unknown> {
     const { name, message, timestamp, timestampIso, stack } = this;
     const cause = (this as unknown as Record<string, unknown>).cause;
 
-    return {
+    const json: Record<string, unknown> = {
       name,
-      message,
+      message, // The original technical message
       timestamp,
       timestampIso,
       stack,
       cause: cause instanceof Error ? cause.toString() : cause,
     };
+
+    // Add user messages to the JSON output for logging if they exist
+    if (this._defaultUserMessage) {
+      json.userMessage = this._defaultUserMessage;
+    }
+    if (Object.keys(this._localizedMessages).length > 0) {
+      json.localizedMessages = this._localizedMessages;
+    }
+
+    return json;
   }
 
   /** Readable one-liner plus optional nested cause. */
