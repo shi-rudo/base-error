@@ -359,6 +359,16 @@ describe("BaseError", () => {
       expect(json).not.toHaveProperty("localizedMessages"); // Empty object should not be included
     });
 
+    it("should include empty default user message in JSON", () => {
+      const error = new TestError("Technical error message");
+
+      error.withUserMessage("");
+
+      const json = error.toJSON();
+
+      expect(json).toHaveProperty("userMessage", "");
+    });
+
     it("should support complex language codes", () => {
       const error = new TestError("Technical error message");
 
