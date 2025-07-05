@@ -151,7 +151,7 @@ export class BaseError<T extends string> extends Error {
     };
 
     // Add user messages to the JSON output for logging if they exist
-    if (this._defaultUserMessage) {
+    if (this._defaultUserMessage !== undefined) {
       json.userMessage = this._defaultUserMessage;
     }
     if (this._localizedMessages.size > 0) {
