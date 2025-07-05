@@ -24,7 +24,6 @@ A robust, cross-environment base error class for TypeScript applications that wo
 npm install @shirudo/base-error
 ```
 
-> **📖 Upgrading from v2?** See the [Migration Guide](MIGRATION-v2-to-v3.md) for detailed upgrade instructions.
 
 ## Usage
 
