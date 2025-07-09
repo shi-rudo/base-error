@@ -7,16 +7,19 @@
 
 A robust, cross-environment base error class for TypeScript applications that works seamlessly across Node.js, modern browsers, and edge runtimes (like Cloudflare Workers, Deno Deploy, and Vercel Edge Functions).
 
+It provides rich, filterable stack traces and advanced features **without polluting the global scope or causing type conflicts.**
+
 ## Features
 
 - 🌐 **Cross-platform compatibility**: Works in Node.js, browsers, and edge runtimes
+- 🚫 **No global scope pollution (v4+)**: Type-safe and isolated, won't conflict with other libraries
 - 🔍 **Rich stack traces**: Captures the best possible stack trace for the current environment
 - 🔄 **Error cause chain**: Preserves the error cause chain, even in environments without native support
 - ⏱️ **Built-in timestamps**: Includes both numeric (epoch) and ISO string timestamps
 - 🧬 **Proper inheritance**: Maintains prototype chain for reliable `instanceof` checks
 - 📊 **JSON serialization**: Built-in `toJSON` method for easy logging
-- ✨ **Automatic name inference**: No need to specify the error name twice (v2.0+)
-- 👤 **User-friendly messages**: Built-in support for user-friendly error messages and internationalization with preserved insertion order
+- ✨ **Automatic name inference**: No need to specify the error name twice
+- 👤 **User-friendly messages**: Built-in support for user-friendly error messages and internationalization
 
 ## Installation
 

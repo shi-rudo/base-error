@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BaseError } from "../BaseError.js";
 
+// Add the same local interface here for tests
+interface V8ErrorConstructor {
+  stackTraceLimit?: number;
+}
+const V8Error = Error as V8ErrorConstructor;
+
 // Ensure consistent behavior in tests
 beforeEach(() => {
   // Reset any mocks
@@ -683,19 +689,20 @@ describe("BaseError", () => {
     });
 
     it("should preserve original Error.stackTraceLimit after construction", () => {
-      const originalLimit = Error.stackTraceLimit;
+      // Use the locally-typed V8Error object
+      const originalLimit = V8Error.stackTraceLimit;
 
       // Set a custom limit
-      Error.stackTraceLimit = 5;
+      V8Error.stackTraceLimit = 5;
 
       // Create error (this should not permanently change the limit)
       const error = new AutoNamedError("Stack limit test");
 
       // Verify the limit is restored
-      expect(Error.stackTraceLimit).toBe(5);
+      expect(V8Error.stackTraceLimit).toBe(5);
 
       // Restore original for other tests
-      Error.stackTraceLimit = originalLimit;
+      V8Error.stackTraceLimit = originalLimit;
 
       expect(error.name).toBe("AutoNamedError");
     });

@@ -1,7 +1,10 @@
-// src/BaseError.ts
-
-// Import global type augmentations (type-only import)
-import type {} from "./types/global.js";
+// This avoids polluting the global scope
+interface V8ErrorConstructor {
+  captureStackTrace?(
+    targetObject: object,
+    constructorOpt?: (...args: unknown[]) => unknown,
+  ): void;
+}
 
 /**
  * Application-specific base error that works across full Node.js, isolate "edge"
@@ -282,10 +285,16 @@ export class BaseError<T extends string> extends Error {
    * Filters out internal BaseError frames for cleaner stack traces.
    */
   /*#__PURE__*/ #captureStack(): string | undefined {
+    // Cast Error to our local interface for type-safe access.
+    const V8Error = Error as V8ErrorConstructor;
+
     // First, try to capture stack directly on this instance when possible
-    if (typeof Error.captureStackTrace === "function") {
+    if (typeof V8Error.captureStackTrace === "function") {
       // V8/Node.js: Capture stack directly on this instance, excluding constructor
-      Error.captureStackTrace(this, this.constructor);
+      V8Error.captureStackTrace(
+        this,
+        this.constructor as (...args: unknown[]) => unknown,
+      );
       return this.#filterInternalFrames(this.stack);
     }
 
