@@ -23,8 +23,5 @@
     "deno",
     "cloudflare-workers",
     "edge-runtime"
-  ],
-  "unstable": {
-    "runtimes": ["deno", "node", "browser", "bun", "cloudflare-workers"]
-  }
+  ]
 }
