@@ -1,0 +1,7 @@
+{
+  "name": "@shirudo/base-error",
+  "version": "3.0.1",
+  "description": "A simple error base class for TypeScript",
+  "license": "MIT",
+  "exports": "./src/index.ts"
+}
