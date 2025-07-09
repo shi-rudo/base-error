@@ -1,7 +1,30 @@
 {
   "name": "@shirudo/base-error",
-  "version": "4.0.0",
-  "description": "A simple error base class for TypeScript",
+  "version": "4.0.1",
+  "description": "A robust, cross-environment base error class for TypeScript applications that works seamlessly across Node.js, modern browsers, and edge runtimes (like Cloudflare Workers, Deno Deploy, and Vercel Edge Functions). Features rich stack traces, error cause chains, built-in timestamps, JSON serialization, automatic name inference, and user-friendly localized messages.",
   "license": "MIT",
-  "exports": "./src/index.ts"
+  "exports": "./src/index.ts",
+  "keywords": [
+    "typescript",
+    "error",
+    "base-error",
+    "try-catch",
+    "exception",
+    "cross-platform",
+    "cause",
+    "stack-trace",
+    "user-friendly-messages",
+    "json",
+    "error-handling",
+    "error-management",
+    "error-propagation",
+    "error-recovery",
+    "error-logging",
+    "deno",
+    "cloudflare-workers",
+    "edge-runtime"
+  ],
+  "unstable": {
+    "runtimes": ["deno", "node", "browser", "bun", "cloudflare-workers"]
+  }
 }
